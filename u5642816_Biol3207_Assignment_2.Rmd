@@ -69,14 +69,18 @@ Clark_summary <- bind_cols(
 Clark_summary <- Clark_summary %>% rename(ctrl.n = n...4, oa.n = n...7, Species = species)
 
 # replace the abbreviated species names with their full scientific names, to match the broader metadata data set used later
-# Species name: Acantho = Acanthochromis polyacanthus; 
-#               Ambon = Pomacentrus amboinensis; 
-#               Chromis = Chromis atripectoralis; 
-#               Humbug = Dascyllus aruanus; 
-#               Lemon = Pomacentrus moluccensis	
-#               Whitedams = Dischistodus perspicillatus
-#levels(df$conf)[levels(df$conf)=='North'] <- 'N'
+# Species name: acantho = Acanthochromis polyacanthus; 
+#               ambon = Pomacentrus amboinensis; 
+#               chromis = Chromis atripectoralis; 
+#               humbug = Dascyllus aruanus; 
+#               lemon = Pomacentrus moluccensis	
+#               whitedams = Dischistodus perspicillatus
 levels(Clark_summary$Species) <- c('Acanthochromis polyacanthus', 'Pomacentrus amboinensis', 'Chromis atripectoralis', 'Dascyllus aruanus', 'Pomacentrus moluccensis', 'Dischistodus perspicillatus')
+
+# convert the species factor back to a character, to match the broader metadata data set used later
+# why did I make species a factor in the first place? Because it makes renaming it much cleaner, and to make it easier to find any possible spelling errors in the data.
+
+Clark_summary <- mutate(Clark_summary, Species = as.character(Species))
 ```
 
 
@@ -86,8 +90,11 @@ Through coding, merge the summary statistics generated from 1) with the metadata
 # Load the Clark et al. (2020) metadata from the data folder
 path <- "./data/clark_paper_data.csv"
 Clark_meta <- read_csv(path)
+```
 
-
+```{r}
+# merge the summary statistics with the metadata
+Clark_meta <- bind_cols(Clark_meta, Clark_summary)
 ```
 
 ### Q3
@@ -96,8 +103,19 @@ Through coding, correctly merge the combined summary statistics and metadata fro
 # Load the larger meta-analysis dataset from the data folder
 path <- "./data/ocean_meta_data.csv"
 meta <- read_csv(path)
+```
 
+```{r}
+str(meta)
+```
+```{r}
+str(Clark_meta)
+```
 
+```{r}
+# merge the combined summary statistics and metadata from Clark et al. (2020) into the larger meta-analysis dataset
+
+meta <- bind_rows(meta, Clark_meta)
 ```
 
 ### Q4
