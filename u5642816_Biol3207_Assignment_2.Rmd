@@ -12,27 +12,91 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r message = FALSE, warning = FALSE}
-#load libraries
+# load libraries
 library(tidyverse)
 library(metafor)
 library(orchaRd)
 ```
 
+[My GitHub Repository](https://github.com/kpet0008/u5642816_Biol3207_Assignment_2)
+
 ### Q1
 Correct analysis of Clark et al. (2020) data (i.e., OA_activitydat_20190302_BIOL3207.csv) to generate the summary statistics (means, SD, N) for each of the fish species’ average activity for each treatment.
 ```{r}
+# Load the Clark et al. (2020) data file from the data folder
+path <- "./data/OA_activitydat_20190302_BIOL3207.csv"
+Clark <- read_csv(path)
+```
+
+```{r}
+# Clean the data
+
+# Removing missing data and turning character variables into factors
+Clark_clean <- Clark %>% filter(!is.na(activity)) %>% filter(!is.na(animal_id)) %>% mutate(across(where(is.character), factor))
+
+# Check spelling in factor variables we care about
+# If no entries are misspelled, there should be 6 levels to species, and 2 to treatment
+str(Clark_clean)
 
 ```
+
+```{r}
+# Create a new object which contains the summary values we're interested in
+#  ie. for each species and treatment, the mean activity, SD activity, and n
+
+# I recognise this is not the tidyest way to do this, however it matches the format of the metadata data set
+
+Clark_summary <- bind_cols(
+  unique(Clark_clean %>% group_by(species) %>% filter(treatment == "control") 
+         %>% mutate(ctrl.mean = mean(activity)) 
+         %>% mutate(ctrl.sd = sd(activity)) 
+         %>% select(species, ctrl.mean, ctrl.sd) 
+         %>% arrange(species)), 
+  (ctrl.n = (Clark_clean %>% group_by(species) %>% filter(treatment == "control") 
+         %>% arrange(species)
+         %>% count())[,2]), 
+  unique(Clark_clean %>% group_by(species) %>% filter(treatment == "CO2") 
+         %>% mutate(oa.mean = mean(activity)) 
+         %>% mutate(oa.sd = sd(activity)) 
+         %>% select(species, oa.mean, oa.sd) 
+         %>% arrange(species))[,2:3], 
+  (oa.n = (Clark_clean %>% group_by(species) %>% filter(treatment == "CO2") 
+         %>% arrange(species) 
+         %>% count())[,2])
+  )
+
+# rename the n columns and species column, to match the broader metadata data set used later
+Clark_summary <- Clark_summary %>% rename(ctrl.n = n...4, oa.n = n...7, Species = species)
+
+# replace the abbreviated species names with their full scientific names, to match the broader metadata data set used later
+# Species name: Acantho = Acanthochromis polyacanthus; 
+#               Ambon = Pomacentrus amboinensis; 
+#               Chromis = Chromis atripectoralis; 
+#               Humbug = Dascyllus aruanus; 
+#               Lemon = Pomacentrus moluccensis	
+#               Whitedams = Dischistodus perspicillatus
+#levels(df$conf)[levels(df$conf)=='North'] <- 'N'
+levels(Clark_summary$Species) <- c('Acanthochromis polyacanthus', 'Pomacentrus amboinensis', 'Chromis atripectoralis', 'Dascyllus aruanus', 'Pomacentrus moluccensis', 'Dischistodus perspicillatus')
+```
+
 
 ### Q2
 Through coding, merge the summary statistics generated from 1) with the metadata (i.e., clark_paper_data.csv) from Clark et al. (2020).
 ```{r}
+# Load the Clark et al. (2020) metadata from the data folder
+path <- "./data/clark_paper_data.csv"
+Clark_meta <- read_csv(path)
+
 
 ```
 
 ### Q3
 Through coding, correctly merge the combined summary statistics and metadata from Clark et al. (2020) (output from 1 & 2) into the larger meta-analysis dataset (i.e., ocean_meta_data.csv).
 ```{r}
+# Load the larger meta-analysis dataset from the data folder
+path <- "./data/ocean_meta_data.csv"
+meta <- read_csv(path)
+
 
 ```
 
