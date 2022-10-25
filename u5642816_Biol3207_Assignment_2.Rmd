@@ -106,10 +106,20 @@ meta <- read_csv(path)
 ```
 
 ```{r}
+# Check if all the columns are the same variable class
 str(meta)
 ```
 ```{r}
 str(Clark_meta)
+```
+
+```{r}
+# A few columns need to be turned into different classes
+# Additionally, NA values in the "Cue/stimulus type" column should be replaced with '-' to match the rest of the data set.
+Clark_meta <- Clark_meta %>% mutate(`Pub year IF` = as.character(`Pub year IF`)) %>% mutate(`2017 IF`= as.character(`2017 IF`)) %>% mutate(`Env cue/stimulus?` = as.character(`Env cue/stimulus?`)) %>% mutate(`Cue/stimulus type` = as.character(`Cue/stimulus type`)) %>% mutate(`Cue/stimulus type` = replace_na(`Cue/stimulus type`, "-"))
+
+str(Clark_meta)
+
 ```
 
 ```{r}
