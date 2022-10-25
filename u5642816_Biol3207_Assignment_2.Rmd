@@ -1,0 +1,95 @@
+---
+title: "BIOL3207 Assignment 2"
+author: "Kalon Peters, u5642816"
+date: "28 October 2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r message = FALSE, warning = FALSE}
+#load libraries
+library(tidyverse)
+library(metafor)
+library(orchaRd)
+```
+
+### Q1
+Correct analysis of Clark et al. (2020) data (i.e., OA_activitydat_20190302_BIOL3207.csv) to generate the summary statistics (means, SD, N) for each of the fish species’ average activity for each treatment.
+```{r}
+
+```
+
+### Q2
+Through coding, merge the summary statistics generated from 1) with the metadata (i.e., clark_paper_data.csv) from Clark et al. (2020).
+```{r}
+
+```
+
+### Q3
+Through coding, correctly merge the combined summary statistics and metadata from Clark et al. (2020) (output from 1 & 2) into the larger meta-analysis dataset (i.e., ocean_meta_data.csv).
+```{r}
+
+```
+
+### Q4
+Correctly calculate the log response ratio (lnRR) effect size for every row of the dataframe using metafor’s escalc() function.
+```{r}
+
+```
+
+### Q5
+Correct meta-analytic model fitted to the data that controls for the sampling variance of lnRR. The model should include a random effect of study and observation. Use metafor’s rma.mv() function.
+```{r}
+
+```
+
+### Q6
+Written paragraph of the findings and what they mean which is supported with a figure. The paragraph should include:
+  Correct presentation and interpretation of overall meta-analytic mean and measures of uncertainty around the mean estimate (e.g., 95% confidence intervals).
+  
+  Measures of heterogeneity in effect size estimates across studies (i.e., I2 and/or prediction intervals - see predict() function in metafor)
+  
+  Forest plot showing the mean estimate, 95% confidence interval, and prediction interval with clearly labelled axes, number of samples and studies plotted on figure
+
+### Q7
+Funnel plot for visually assessing the possibility of publication bias.
+```{r}
+
+```
+
+### Q8
+Time-lag plot assessing how effect sizes may or may not have changed through time.
+```{r}
+
+```
+
+### Q9
+Formal meta-regression model that includes year as a moderator (fixed effect) to test for time-lag bias
+```{r}
+
+```
+
+### Q10
+Formal meta-regression model that includes inverse sampling variance (i.e., 1vlnRR) to test for file-drawer biases
+```{r}
+
+```
+
+### Q11
+A written paragraph that discusses the potential for publication bias based on the meta-regression results. What type of publication bias, if any, appears to be present in the data? If publication bias is present, what does it mean and what might be contributing to such bias?
+
+### Q12
+Identify any studies contributing to publication bias. How do your updated meta-analysis results compare with a meta-analysis by Clement et. al. (2022)? Are there any concerns about these studies? If so, describe using references to existing papers what concerns have been raised?
+
+
+
+
+
+
+
+
