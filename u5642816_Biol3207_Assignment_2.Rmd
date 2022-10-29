@@ -131,7 +131,7 @@ meta <- bind_rows(meta, Clark_meta)
 ### Q4
 Correctly calculate the log response ratio (lnRR) effect size for every row of the dataframe using metafor’s escalc() function.
 ```{r}
-
+lnrr <- escalc(measure="ROM", m1i = ctrl.mean, m2i = oa.mean, sd1i = ctrl.sd, sd2i = oa.sd, n1i = ctrl.n, n2i = oa.n, data=meta)
 ```
 
 ### Q5
