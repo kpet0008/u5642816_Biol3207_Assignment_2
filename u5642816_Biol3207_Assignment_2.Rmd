@@ -132,32 +132,76 @@ meta <- bind_rows(meta, Clark_meta)
 Correctly calculate the log response ratio (lnRR) effect size for every row of the dataframe using metafor’s escalc() function.
 ```{r}
 lnrr <- escalc(measure="ROM", m1i = ctrl.mean, m2i = oa.mean, sd1i = ctrl.sd, sd2i = oa.sd, n1i = ctrl.n, n2i = oa.n, data=meta)
+#This produces NaNs whenever the sign of ctrl.mean and oa.mean are different.
 ```
 
 ### Q5
 Correct meta-analytic model fitted to the data that controls for the sampling variance of lnRR. The model should include a random effect of study and observation. Use metafor’s rma.mv() function.
 ```{r}
-
+MLMA <- metafor::rma.mv(yi ~ 1, V = vi, 
+                   method="REML",
+                   random=list(~1|Study), 
+                   dfs = "contain",
+                   test="t",
+                   data=lnrr)
+MLMA
 ```
+```{r}
+coef(MLMA)
+MLMA$ci.lb
+MLMA$ci.ub
+MLMA$pval
+```
+
+
 
 ### Q6
 Written paragraph of the findings and what they mean which is supported with a figure. The paragraph should include:
   Correct presentation and interpretation of overall meta-analytic mean and measures of uncertainty around the mean estimate (e.g., 95% confidence intervals).
-  
-  Measures of heterogeneity in effect size estimates across studies (i.e., I2 and/or prediction intervals - see predict() function in metafor)
-  
-  Forest plot showing the mean estimate, 95% confidence interval, and prediction interval with clearly labelled axes, number of samples and studies plotted on figure
 
-### Q7
-Funnel plot for visually assessing the possibility of publication bias.
+```{}
+The effect size is not significantly different from 0
+```
+
+  Measures of heterogeneity in effect size estimates across studies (i.e., I2 and/or prediction intervals - see predict() function in metafor)
+```{r}
+predict(MLMA, transf = "transf.ztor")
+```
+ 
+  Forest plot showing the mean estimate, 95% confidence interval, and prediction interval with clearly labelled axes, number of samples and studies plotted on figure
 ```{r}
 
 ```
 
+
+
+### Q7
+Funnel plot for visually assessing the possibility of publication bias.
+```{r}
+metafor::funnel(x = lnrr$yi, vi = abs(log(lnrr$vi)), 
+               yaxis = "seinv", digits = 2,
+               level = c(0.1, 0.05, 0.01),
+               shade = c("white", "gray55", "gray 75"), las = 1, 
+                xlab = "Correlation Coefficient (r)", atransf=tanh, legend = TRUE)
+```
+```{r}
+ggplot(lnrr, aes(x=yi, y=abs(log(1/sqrt(vi))))) + geom_point() + xlab("Correlation Coefficient (r)") + ylab("Inverse Standard Error")
+```
+```{r}
+temp <- lnrr %>% mutate(inverse.se = 1/sqrt(vi))
+```
+
+
+### This seems like it should be important but it doesnt fit in any of the questions
+```{r}
+ggplot(lnrr, aes(x = Average.n, y = abs(yi))) + geom_point() + ylab("Effect size magnitude (lnRR)") + xlab("Mean sample size")
+```
+
+
 ### Q8
 Time-lag plot assessing how effect sizes may or may not have changed through time.
 ```{r}
-
+ggplot(lnrr, aes(x=Year..online., y=yi, size=1/sqrt(vi))) + geom_point(alpha=0.5) + geom_smooth(method = "lm", show.legend = F) + labs(size="Inverse Sampling Variance") + ylab("Effect Size")
 ```
 
 ### Q9
