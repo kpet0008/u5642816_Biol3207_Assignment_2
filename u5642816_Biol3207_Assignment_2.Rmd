@@ -1,7 +1,7 @@
 ---
 title: "BIOL3207 Assignment 2"
 author: "Kalon Peters, u5642816"
-date: "28 October 2022"
+date: "31 October 2022"
 output:
   html_document: default
   pdf_document: default
@@ -24,7 +24,7 @@ library(flextable)
 ### Q1
 Correct analysis of Clark et al. (2020) data (i.e., OA_activitydat_20190302_BIOL3207.csv) to generate the summary statistics (means, SD, N) for each of the fish species’ average activity for each treatment.
 ```{r}
-# Load the Clark et al. (2020) data file from the data folder
+# Load the Clark et al. (2020) data file from the data folder into an object "Clark"
 path <- "./data/OA_activitydat_20190302_BIOL3207.csv"
 Clark <- read_csv(path)
 ```
@@ -88,7 +88,7 @@ Clark_summary <- mutate(Clark_summary, Species = as.character(Species))
 ### Q2
 Through coding, merge the summary statistics generated from 1) with the metadata (i.e., clark_paper_data.csv) from Clark et al. (2020).
 ```{r}
-# Load the Clark et al. (2020) metadata from the data folder
+# Load the Clark et al. (2020) metadata from the data folder into an object "Clark_meta"
 path <- "./data/clark_paper_data.csv"
 Clark_meta <- read_csv(path)
 ```
@@ -101,13 +101,13 @@ Clark_meta <- bind_cols(Clark_meta, Clark_summary)
 ### Q3
 Through coding, correctly merge the combined summary statistics and metadata from Clark et al. (2020) (output from 1 & 2) into the larger meta-analysis dataset (i.e., ocean_meta_data.csv).
 ```{r}
-# Load the larger meta-analysis dataset from the data folder
+# Load the larger meta-analysis dataset from the data folder into an object "meta"
 path <- "./data/ocean_meta_data.csv"
 meta <- read_csv(path)
 ```
 
 ```{r}
-# A few columns need to be turned into different classes
+# A few columns need to be turned into character variables
 # Additionally, NA values in the "Cue/stimulus type" column should be replaced with '-' to match the rest of the data set.
 Clark_meta <- Clark_meta %>% mutate(`Pub year IF` = as.character(`Pub year IF`)) %>% mutate(`2017 IF`= as.character(`2017 IF`)) %>% mutate(`Env cue/stimulus?` = as.character(`Env cue/stimulus?`)) %>% mutate(`Cue/stimulus type` = as.character(`Cue/stimulus type`)) %>% mutate(`Cue/stimulus type` = replace_na(`Cue/stimulus type`, "-"))
 
@@ -124,8 +124,8 @@ meta <- bind_rows(meta, Clark_meta)
 ### Q4
 Correctly calculate the log response ratio (lnRR) effect size for every row of the dataframe using metafor’s escalc() function.
 ```{r}
-#lnRR produces NaNs whenever the sign of ctrl.mean and oa.mean are different.
-#Since these either break or are automatically excluded from future analyses, and there arent many rows like this, its easiest to just remove them now
+# lnRR produces NaNs whenever the sign of ctrl.mean and oa.mean are different.
+# Since these either break or are automatically excluded from future analyses, and there arent many rows like this, its easiest to just remove them now
 lnrr <- meta %>% filter(ctrl.mean > 0 & oa.mean > 0 | ctrl.mean < 0 & oa.mean < 0)
 lnrr <- escalc(measure="ROM", m1i = ctrl.mean, m2i = oa.mean, sd1i = ctrl.sd, sd2i = oa.sd, n1i = ctrl.n, n2i = oa.n, data=lnrr)
 
@@ -134,10 +134,13 @@ lnrr <- escalc(measure="ROM", m1i = ctrl.mean, m2i = oa.mean, sd1i = ctrl.sd, sd
 ### Q5
 Correct meta-analytic model fitted to the data that controls for the sampling variance of lnRR. The model should include a random effect of study and observation. Use metafor’s rma.mv() function.
 ```{r}
-#Because the ratio of largest to smallest sampling variance extremely large, the model has a very difficult time producing a result with default settings.
-#By default, rel.tol = 1e-8. To make this model actually produce a result, I've had to increase it all the way to 1e-2
-#In theory I should also be able to make the model run more iterations with iter.max, to maybe get a result without changing the tolerance,
-# but for some reason that's not actually making it run more iterations in practice.
+# Producing an rma.mv model using the effect size (yi) and sampling variance (vi) calculated above
+# Authors and Study are invluded as random effects
+
+# Because the ratio of largest to smallest sampling variance extremely large, the model has a very difficult time producing a result with default settings.
+# By default, rel.tol = 1e-8. To make this model actually produce a result, I've had to increase it all the way to 1e-2
+# In theory I should also be able to make the model run more iterations with iter.max, to maybe get a result without changing the tolerance,
+#  but for some reason that's not actually making it run more iterations in practice.
 MLMA <- metafor::rma.mv(yi ~ 1, V = vi, 
                    method="REML",
                    random=list(~1|Authors,
@@ -150,6 +153,7 @@ MLMA
 ```
 
 ```{r}
+# remove this before submitting
 coef(MLMA)
 MLMA$ci.lb
 MLMA$ci.ub
@@ -168,8 +172,7 @@ The effect size is not significantly different from 0
 
   Measures of heterogeneity in effect size estimates across studies (i.e., I2 and/or prediction intervals - see predict() function in metafor)
 ```{r}
-#I have no idea if this is useful. It probably isnt. Remove if I dont figure it out
-#predict(MLMA)
+predict(MLMA)
 
 ## Calculate I2
 i2_vals <- orchaRd::i2_ml(MLMA)
@@ -186,48 +189,47 @@ flextable(i2) %>%
   compose(part = "header", j = 2, value = as_paragraph(as_b("I"), as_b(as_sup("2")), as_b("(%)")))
 ```
  
-  Forest plot showing the mean estimate, 95% confidence interval, and prediction interval with clearly labelled axes, number of samples and studies plotted on figure
-```{r}
-orchaRd::orchard_plot(MLMR, mod = "disp_trait", group = "study_ID", data = zr_data, xlab = "Mean Estimate", angle = 45)
-```
+
 
 
 
 ### Q7
 Funnel plot for visually assessing the possibility of publication bias.
 ```{r}
-metafor::funnel(x = lnrr$yi, vi = abs(log(lnrr$vi)), 
-               yaxis = "seinv", digits = 2,
-               level = c(0.1, 0.05, 0.01),
-               shade = c("white", "gray55", "gray 75"), las = 1, 
-                xlab = "Correlation Coefficient (r)", atransf=tanh, legend = TRUE)
-```
-```{r}
-ggplot(lnrr, aes(x=yi, y=abs(log(1/sqrt(vi))))) + geom_point() + xlab("Correlation Coefficient (r)") + ylab("Inverse Standard Error")
+# Due to the extreme variation in the size of sampling error (and subsequently, the inverse standard error),
+#  I have log transformed the y axis to compress the y axis to a readable scale.
+
+ggplot(lnrr, aes(y = abs(log(1/sqrt(vi))), x = yi)) + geom_point() + geom_vline(aes(xintercept = 0)) +
+    labs(y = "Precision (1/SE)", x = "log Reponse Ratio (lnRR)") + theme_bw()
 ```
 
-### This seems like it should be important but it doesnt fit in any of the questions
-```{r}
-ggplot(lnrr, aes(x = Average.n, y = abs(yi))) + geom_point() + ylab("Effect size magnitude (lnRR)") + xlab("Mean sample size")
-```
 
 
 ### Q8
 Time-lag plot assessing how effect sizes may or may not have changed through time.
 ```{r}
-ggplot(lnrr, aes(x=Year..online., y=yi, size=1/sqrt(vi))) + geom_point(alpha=0.5) + geom_smooth(method = "lm", show.legend = F) + labs(size="Inverse Sampling Variance") + ylab("Effect Size")
+# 'Year..online.' is the year the study was published, on the x axis
+# 'yi' in the log response ratio, on the y axis
+# Points are scaled in size according to their inverse standard error, 1/sqrt(vi)
+# A linear model trend line is also applied
+ggplot(lnrr, aes(x=Year..online., y=yi, size=1/sqrt(vi))) + geom_point(alpha=0.5) + geom_smooth(method = "lm", show.legend = F) + labs(size="Inverse Sampling Variance") + ylab("Effect Size") + xlab("Year Published")
 ```
 
 ### Q9
 Formal meta-regression model that includes year as a moderator (fixed effect) to test for time-lag bias
 ```{r}
-#centre the year on zero and remove the rows with an NA value since apparently they break the meta regression
+# centre the year on zero and remove the rows with an NA value since apparently they break the meta regression
 lnrr_temp <-  na.omit(lnrr) %>% mutate(Year_c = mean(Year..online.) - Year..online.)
 
-metareg_time_c <- rma.mv(yi ~ 1 + Year_c, V = vi,
-                    random = list(~1|Study), 
-                    test = "t", dfs = "contain", 
-                    data = lnrr_temp)
+# As before, rel.tol needs to be greatly increased compared to the default setting for this model to run
+metareg_time_c <- rma.mv(yi ~ 1 + Year_c, V = vi, 
+                   method="REML",
+                   random=list(~1|Authors,
+                               ~1|Study), 
+                   dfs = "contain",
+                   test="t",
+                   data=lnrr_temp,
+                   control = list(rel.tol = 1e-1))
 summary(metareg_time_c) 
 ```
 test for residual heterogeneity tells us there is a lot of unexplained variation left over
@@ -238,12 +240,22 @@ Test of moderators tells us that the moderators (in this case, year) are not exp
 ### Q10
 Formal meta-regression model that includes inverse sampling variance (i.e., 1vlnRR) to test for file-drawer biases
 ```{r}
-metareg_time_c <- rma.mv(yi ~ 1 + (1/vi), V = vi,
-                    random = list(~1|Study), 
-                    test = "t", dfs = "contain", 
-                    data = lnrr_temp)
+# I see we've been asked to use inverse sampling variance as a moderator.
+# I have used sampling variance instead, because the model simply does not run with inverse sampling variance,
+#  and sampling variance is what was used in week 10 to test for file-drawer bias.
+# I can only hope that asking for inverse sampling variance was a mistake.
+
+metareg_time_c <- rma.mv(yi ~ vi, V = vi, 
+                   method="REML",
+                   random=list(~1|Authors,
+                               ~1|Study), 
+                   dfs = "contain",
+                   test="t",
+                   data=lnrr_temp,
+                   control = list(rel.tol = 1e-2))
 summary(metareg_time_c) 
 ```
+
 
 ### Q11
 A written paragraph that discusses the potential for publication bias based on the meta-regression results. What type of publication bias, if any, appears to be present in the data? If publication bias is present, what does it mean and what might be contributing to such bias?
