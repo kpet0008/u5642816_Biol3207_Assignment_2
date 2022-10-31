@@ -2,9 +2,13 @@
 title: "BIOL3207 Assignment 2"
 author: "Kalon Peters, u5642816"
 date: "31 October 2022"
-output:
-  html_document: default
-  pdf_document: default
+output: 
+  bookdown::html_document2:
+    code_folding: show
+    number_sections: no
+    toc: yes
+    toc_depth: 6
+    toc_float: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -152,50 +156,25 @@ MLMA <- metafor::rma.mv(yi ~ 1, V = vi,
 MLMA
 ```
 
-```{r}
-# remove this before submitting
-coef(MLMA)
-MLMA$ci.lb
-MLMA$ci.ub
-MLMA$pval
-```
-
-
-
 ### Q6
-Written paragraph of the findings and what they mean which is supported with a figure. The paragraph should include:
-  Correct presentation and interpretation of overall meta-analytic mean and measures of uncertainty around the mean estimate (e.g., 95% confidence intervals).
-
-```{}
-The effect size is not significantly different from 0
-```
-
-  Measures of heterogeneity in effect size estimates across studies (i.e., I2 and/or prediction intervals - see predict() function in metafor)
-```{r}
-predict(MLMA)
+Written paragraph of the findings and what they mean which is supported with a figure.
+```{r, predict_I2, fig.align='center', fig.cap= "Table 1: I2 analysis showing the breakdown of which factors accounted for in the meta-regression model explain what percentage of variation in the log response ratio."}
+predict <- predict(MLMA)
 
 ## Calculate I2
 i2_vals <- orchaRd::i2_ml(MLMA)
-
-## Make a pretty table. First, lets clean up the names of the different I2 estimates. Lets remove I2_. It's a string, so, we can use some regular expressions to fix that. `gsub` is pretty useful. You put a pattern in and tell it what you would like to replace the text with. In this case, just blank will do! Then, we'll make the first letter of what is left capitalised.
-i2 <- tibble(type = firstup(gsub("I2_", "",names(i2_vals))), I2 = i2_vals)
-
-
-# You remember flextable. Now, lets make a pretty table. We can so some nice modifications here too.
-
-flextable(i2) %>% 
-    align(part = "header", align = "center") %>% 
-  compose(part = "header", j = 1, value = as_paragraph(as_b("Type"))) %>% 
-  compose(part = "header", j = 2, value = as_paragraph(as_b("I"), as_b(as_sup("2")), as_b("(%)")))
 ```
- 
+  
+The overall meta-analytic mean was `r x=coef(MLMA); x`, with a 95% confidence interval of `r x=MLMA$ci.lb; x` to `r x=MLMA$ci.ub; x`, and a p-value of `r x=MLMA$pval; x`.
+From this, we can interpret that the overall effect size among all the studies in the meta-analysis is not significantly different from zero.
+The prediction interval was `r x=predict$ci.lb; x` to `r x=predict$ci.ub; x`, which once again tells us that the effect size is not expected to be significantly different from zero.
 
-
+In the I^2 analysis we can see that `r x=i2_vals[2]; x`% of the variation in the log response ratio is explained by a difference in the study, and `r x=i2_vals[3]; x`% is explained by a difference in observation. Together, this explains all the variation, which is consistent with the true effect size not being significantly different from zero.
 
 
 ### Q7
 Funnel plot for visually assessing the possibility of publication bias.
-```{r, funnel, fig.align='center', fig.cap= "Funnel plot depicting precision (1 / SE) against the log response ratio (lnRR)."}
+```{r funnel, echo=TRUE, fig.align='center', fig.cap= "Figre 1: Funnel plot depicting precision (1 / SE) against the log response ratio (lnRR)."}
 # Due to the extreme variation in the size of sampling error (and subsequently, the inverse standard error),
 #  I have log transformed the y axis to compress the y axis to a readable scale.
 # In order to do this, it seemed to be necessary to use ggplot rather than metafor to create the plot.
@@ -205,11 +184,11 @@ ggplot(lnrr, aes(y = abs(log(1/sqrt(vi))), x = yi)) + geom_point() + geom_vline(
     labs(y = "Precision (1/SE)", x = "log Reponse Ratio (lnRR)") + theme_bw()
 ```
 
-
+Fig. \@ref(fig:funnel)
 
 ### Q8
 Time-lag plot assessing how effect sizes may or may not have changed through time.
-```{r, time-lag, fig.align='center', fig.cap= "Time-lag plot depicting effect size (lnRR) against the year in which the paper was published. Point size is scaled according to precision, 1/sqrt(vi)"}
+```{r, time-lag, fig.align='center', fig.cap= "Figure 2: Time-lag plot depicting effect size (lnRR) against the year in which the paper was published. Point size is scaled according to precision, 1/sqrt(vi)"}
 # 'Year..online.' is the year the study was published, on the x axis
 # 'yi' in the log response ratio, on the y axis
 # Points are scaled in size according to their inverse standard error, 1/sqrt(vi)
