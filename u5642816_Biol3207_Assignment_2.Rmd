@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(metafor)
 library(orchaRd)
+library(flextable)
 ```
 
 [My GitHub Repository](https://github.com/kpet0008/u5642816_Biol3207_Assignment_2)
@@ -106,14 +107,6 @@ meta <- read_csv(path)
 ```
 
 ```{r}
-# Check if all the columns are the same variable class
-str(meta)
-```
-```{r}
-str(Clark_meta)
-```
-
-```{r}
 # A few columns need to be turned into different classes
 # Additionally, NA values in the "Cue/stimulus type" column should be replaced with '-' to match the rest of the data set.
 Clark_meta <- Clark_meta %>% mutate(`Pub year IF` = as.character(`Pub year IF`)) %>% mutate(`2017 IF`= as.character(`2017 IF`)) %>% mutate(`Env cue/stimulus?` = as.character(`Env cue/stimulus?`)) %>% mutate(`Cue/stimulus type` = as.character(`Cue/stimulus type`)) %>% mutate(`Cue/stimulus type` = replace_na(`Cue/stimulus type`, "-"))
@@ -131,21 +124,31 @@ meta <- bind_rows(meta, Clark_meta)
 ### Q4
 Correctly calculate the log response ratio (lnRR) effect size for every row of the dataframe using metafor’s escalc() function.
 ```{r}
-lnrr <- escalc(measure="ROM", m1i = ctrl.mean, m2i = oa.mean, sd1i = ctrl.sd, sd2i = oa.sd, n1i = ctrl.n, n2i = oa.n, data=meta)
-#This produces NaNs whenever the sign of ctrl.mean and oa.mean are different.
+#lnRR produces NaNs whenever the sign of ctrl.mean and oa.mean are different.
+#Since these either break or are automatically excluded from future analyses, and there arent many rows like this, its easiest to just remove them now
+lnrr <- meta %>% filter(ctrl.mean > 0 & oa.mean > 0 | ctrl.mean < 0 & oa.mean < 0)
+lnrr <- escalc(measure="ROM", m1i = ctrl.mean, m2i = oa.mean, sd1i = ctrl.sd, sd2i = oa.sd, n1i = ctrl.n, n2i = oa.n, data=lnrr)
+
 ```
 
 ### Q5
 Correct meta-analytic model fitted to the data that controls for the sampling variance of lnRR. The model should include a random effect of study and observation. Use metafor’s rma.mv() function.
 ```{r}
+#Because the ratio of largest to smallest sampling variance extremely large, the model has a very difficult time producing a result with default settings.
+#By default, rel.tol = 1e-8. To make this model actually produce a result, I've had to increase it all the way to 1e-2
+#In theory I should also be able to make the model run more iterations with iter.max, to maybe get a result without changing the tolerance,
+# but for some reason that's not actually making it run more iterations in practice.
 MLMA <- metafor::rma.mv(yi ~ 1, V = vi, 
                    method="REML",
-                   random=list(~1|Study), 
+                   random=list(~1|Authors,
+                               ~1|Study), 
                    dfs = "contain",
                    test="t",
-                   data=lnrr)
+                   data=lnrr,
+                   control = list(rel.tol = 1e-2))
 MLMA
 ```
+
 ```{r}
 coef(MLMA)
 MLMA$ci.lb
@@ -165,12 +168,27 @@ The effect size is not significantly different from 0
 
   Measures of heterogeneity in effect size estimates across studies (i.e., I2 and/or prediction intervals - see predict() function in metafor)
 ```{r}
-predict(MLMA, transf = "transf.ztor")
+#I have no idea if this is useful. It probably isnt. Remove if I dont figure it out
+#predict(MLMA)
+
+## Calculate I2
+i2_vals <- orchaRd::i2_ml(MLMA)
+
+## Make a pretty table. First, lets clean up the names of the different I2 estimates. Lets remove I2_. It's a string, so, we can use some regular expressions to fix that. `gsub` is pretty useful. You put a pattern in and tell it what you would like to replace the text with. In this case, just blank will do! Then, we'll make the first letter of what is left capitalised.
+i2 <- tibble(type = firstup(gsub("I2_", "",names(i2_vals))), I2 = i2_vals)
+
+
+# You remember flextable. Now, lets make a pretty table. We can so some nice modifications here too.
+
+flextable(i2) %>% 
+    align(part = "header", align = "center") %>% 
+  compose(part = "header", j = 1, value = as_paragraph(as_b("Type"))) %>% 
+  compose(part = "header", j = 2, value = as_paragraph(as_b("I"), as_b(as_sup("2")), as_b("(%)")))
 ```
  
   Forest plot showing the mean estimate, 95% confidence interval, and prediction interval with clearly labelled axes, number of samples and studies plotted on figure
 ```{r}
-
+orchaRd::orchard_plot(MLMR, mod = "disp_trait", group = "study_ID", data = zr_data, xlab = "Mean Estimate", angle = 45)
 ```
 
 
@@ -187,10 +205,6 @@ metafor::funnel(x = lnrr$yi, vi = abs(log(lnrr$vi)),
 ```{r}
 ggplot(lnrr, aes(x=yi, y=abs(log(1/sqrt(vi))))) + geom_point() + xlab("Correlation Coefficient (r)") + ylab("Inverse Standard Error")
 ```
-```{r}
-temp <- lnrr %>% mutate(inverse.se = 1/sqrt(vi))
-```
-
 
 ### This seems like it should be important but it doesnt fit in any of the questions
 ```{r}
@@ -207,13 +221,28 @@ ggplot(lnrr, aes(x=Year..online., y=yi, size=1/sqrt(vi))) + geom_point(alpha=0.5
 ### Q9
 Formal meta-regression model that includes year as a moderator (fixed effect) to test for time-lag bias
 ```{r}
+#centre the year on zero and remove the rows with an NA value since apparently they break the meta regression
+lnrr_temp <-  na.omit(lnrr) %>% mutate(Year_c = mean(Year..online.) - Year..online.)
 
+metareg_time_c <- rma.mv(yi ~ 1 + Year_c, V = vi,
+                    random = list(~1|Study), 
+                    test = "t", dfs = "contain", 
+                    data = lnrr_temp)
+summary(metareg_time_c) 
 ```
+test for residual heterogeneity tells us there is a lot of unexplained variation left over
+Test of moderators tells us that the moderators (in this case, year) are not explaining a significant amount of variation
+
+
 
 ### Q10
 Formal meta-regression model that includes inverse sampling variance (i.e., 1vlnRR) to test for file-drawer biases
 ```{r}
-
+metareg_time_c <- rma.mv(yi ~ 1 + (1/vi), V = vi,
+                    random = list(~1|Study), 
+                    test = "t", dfs = "contain", 
+                    data = lnrr_temp)
+summary(metareg_time_c) 
 ```
 
 ### Q11
