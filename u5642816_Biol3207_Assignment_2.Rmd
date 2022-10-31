@@ -195,9 +195,11 @@ flextable(i2) %>%
 
 ### Q7
 Funnel plot for visually assessing the possibility of publication bias.
-```{r}
+```{r, funnel, fig.align='center', fig.cap= "Funnel plot depicting precision (1 / SE) against the log response ratio (lnRR)."}
 # Due to the extreme variation in the size of sampling error (and subsequently, the inverse standard error),
 #  I have log transformed the y axis to compress the y axis to a readable scale.
+# In order to do this, it seemed to be necessary to use ggplot rather than metafor to create the plot.
+# As a consequence, the plot cant be contour-enhanced.
 
 ggplot(lnrr, aes(y = abs(log(1/sqrt(vi))), x = yi)) + geom_point() + geom_vline(aes(xintercept = 0)) +
     labs(y = "Precision (1/SE)", x = "log Reponse Ratio (lnRR)") + theme_bw()
@@ -207,12 +209,12 @@ ggplot(lnrr, aes(y = abs(log(1/sqrt(vi))), x = yi)) + geom_point() + geom_vline(
 
 ### Q8
 Time-lag plot assessing how effect sizes may or may not have changed through time.
-```{r}
+```{r, time-lag, fig.align='center', fig.cap= "Time-lag plot depicting effect size (lnRR) against the year in which the paper was published. Point size is scaled according to precision, 1/sqrt(vi)"}
 # 'Year..online.' is the year the study was published, on the x axis
 # 'yi' in the log response ratio, on the y axis
 # Points are scaled in size according to their inverse standard error, 1/sqrt(vi)
 # A linear model trend line is also applied
-ggplot(lnrr, aes(x=Year..online., y=yi, size=1/sqrt(vi))) + geom_point(alpha=0.5) + geom_smooth(method = "lm", show.legend = F) + labs(size="Inverse Sampling Variance") + ylab("Effect Size") + xlab("Year Published")
+ggplot(lnrr, aes(x=Year..online., y=yi, size=1/sqrt(vi))) + geom_point(alpha=0.5) + geom_smooth(method = "lm", show.legend = F) + labs(size="Precision (1/SE)") + ylab("Effect Size (lnRR)") + xlab("Year Published")
 ```
 
 ### Q9
