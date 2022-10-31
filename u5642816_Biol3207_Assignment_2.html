@@ -1920,14 +1920,22 @@ metareg_time_f &lt;- rma.mv(yi ~ vi, V = vi,
 </div>
 <div id="q11" class="section level3">
 <h3>Q11</h3>
-<p>A written paragraph that discusses the potential for publication bias based on the meta-regression results. What type of publication bias, if any, appears to be present in the data? If publication bias is present, what does it mean and what might be contributing to such bias?</p>
 <p>We can see from the time-lag plot Fig. <a href="#fig:time-lag">2</a> that not only does effect size not seem to be decreasing with time, it actually appears to be increasing with time.<br />
-The dominance of low-power studies also appears to be consistent through time. This is contrary to what would be expected if a time-lag bias were present. A meta-regression model with year as a moderating factor similarly did not find any evidence that the year of publication is not explaining a significant amount of variation, with a 95% confidence interval of -0.2077676 to 0.1723563, and a p-value of 0.8535881.</p>
+The dominance of low-power studies also appears to be consistent through time. This is contrary to what would be expected if a decline effect were present. A meta-regression model with year as a moderating factor similarly did not find any evidence that the year of publication is not explaining a significant amount of variation, with a 95% confidence interval of -0.2077676 to 0.1723563, and a p-value of 0.8535881.</p>
 <p>The funnel plot Fig. <a href="#fig:funnel">1</a> does not appear to show any noteworthy asymmetry, with the exception of two relatively high-power studies showing a positive effect. Thus is does not seem there is any file-drawer bias at play either. Similarly, a meta-regression model with sampling variance as a moderating factor similarly did not find any evidence that the year of publication is not explaining a significant amount of variation, with a 95% confidence interval of -1.615965^{-4} to 1.592617^{-4}, and a p-value of 0.9886071.</p>
 </div>
 <div id="q12" class="section level3">
 <h3>Q12</h3>
-<p>Identify any studies contributing to publication bias. How do your updated meta-analysis results compare with a meta-analysis by Clement et. al. (2022)? Are there any concerns about these studies? If so, describe using references to existing papers what concerns have been raised?</p>
+<p>In this dataset, out of 801 studies used in the analysis had an average sample size of below 30. We may consider only studies with an average sample size of above 30, however the initial analysis already found that the log response ratio was not likely to be significantly different from zero, and this is unlikely to change.</p>
+<pre class="r"><code>MLMA_new &lt;- metafor::rma.mv(yi ~ 1, V = vi, 
+                   method=&quot;REML&quot;,
+                   random=list(~1|Authors,
+                               ~1|Study), 
+                   dfs = &quot;contain&quot;,
+                   test=&quot;t&quot;,
+                   data=lnrr[lnrr$Average.n &gt; 29,])</code></pre>
+<p>As expected, when rerunning the initial meta-analysis while considering only papers with an average sample size of 30 or more, there is still no significant difference from zero in the log response ratio, with a confidence interval of -0.0755861 to 0.1408127.</p>
+<p>Clement et. al. (2022) found a decline effect when performing a meta-analysis on a much smaller set of studies on the effects of ocean acidification on fish behavior. In this much larger data set, a decline effect does not appear to be present.</p>
 </div>
 
 

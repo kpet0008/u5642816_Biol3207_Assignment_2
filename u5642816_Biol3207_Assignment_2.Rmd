@@ -238,18 +238,27 @@ summary(metareg_time_f)
 
 ### Q11
 We can see from the time-lag plot Fig. \@ref(fig:time-lag) that not only does effect size not seem to be decreasing with time, it actually appears to be increasing with time.  
-The dominance of low-power studies also appears to be consistent through time. This is contrary to what would be expected if a time-lag bias were present. A meta-regression model with year as a moderating factor similarly did not find any evidence that the year of publication is not explaining a significant amount of variation, with a 95% confidence interval of `r x=metareg_time_c$ci.lb[2]; x` to `r x=metareg_time_c$ci.ub[2]; x`, and a p-value of `r x=metareg_time_c$pval[2]; x`.    
+The dominance of low-power studies also appears to be consistent through time. This is contrary to what would be expected if a decline effect were present. A meta-regression model with year as a moderating factor similarly did not find any evidence that the year of publication is not explaining a significant amount of variation, with a 95% confidence interval of `r x=metareg_time_c$ci.lb[2]; x` to `r x=metareg_time_c$ci.ub[2]; x`, and a p-value of `r x=metareg_time_c$pval[2]; x`.    
 
 The funnel plot Fig. \@ref(fig:funnel) does not appear to show any noteworthy asymmetry, with the exception of two relatively high-power studies showing a positive effect. Thus is does not seem there is any file-drawer bias at play either. Similarly, a meta-regression model with sampling variance as a moderating factor similarly did not find any evidence that the year of publication is not explaining a significant amount of variation, with a 95% confidence interval of `r x=metareg_time_f$ci.lb[2]; x` to `r x=metareg_time_f$ci.ub[2]; x`, and a p-value of `r x=metareg_time_f$pval[2]; x`.    
 
 
 ### Q12
-Identify any studies contributing to publication bias. How do your updated meta-analysis results compare with a meta-analysis by Clement et. al. (2022)? Are there any concerns about these studies? If so, describe using references to existing papers what concerns have been raised?
+In this dataset, `r x=count(lnrr[lnrr$Average.n < 30,]); x` out of 801 studies used in the analysis had an average sample size of below 30. We may consider only studies with an average sample size of above 30, however the initial analysis already found that the log response ratio was not likely to be significantly different from zero, and this is unlikely to change.
+
+```{r}
+MLMA_new <- metafor::rma.mv(yi ~ 1, V = vi, 
+                   method="REML",
+                   random=list(~1|Authors,
+                               ~1|Study), 
+                   dfs = "contain",
+                   test="t",
+                   data=lnrr[lnrr$Average.n > 29,])
+```
+As expected, when rerunning the initial meta-analysis while considering only papers with an average sample size of 30 or more, there is still no significant difference from zero in the log response ratio, with a confidence interval of `r x=MLMA_new$ci.lb; x` to `r x=MLMA_new$ci.ub; x`.
 
 
-
-
-
+Clement et. al. (2022) found a decline effect when performing a meta-analysis on a much smaller set of studies on the effects of ocean acidification on fish behavior. In this much larger data set, a decline effect does not appear to be present. Much as in this analysis, Clement et. al. (2022) also found that log response ratio was not likely to be significantly different from zero.
 
 
 
