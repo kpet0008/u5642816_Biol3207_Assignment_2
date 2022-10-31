@@ -165,11 +165,11 @@ predict <- predict(MLMA)
 i2_vals <- orchaRd::i2_ml(MLMA)
 ```
   
-The overall meta-analytic mean was `r x=coef(MLMA); x`, with a 95% confidence interval of `r x=MLMA$ci.lb; x` to `r x=MLMA$ci.ub; x`, and a p-value of `r x=MLMA$pval; x`.
-From this, we can interpret that the overall effect size among all the studies in the meta-analysis is not significantly different from zero.
-The prediction interval was `r x=predict$ci.lb; x` to `r x=predict$ci.ub; x`, which once again tells us that the effect size is not expected to be significantly different from zero.
+The overall meta-analytic mean was `r x=coef(MLMA); x`, with a 95% confidence interval of `r x=MLMA$ci.lb; x` to `r x=MLMA$ci.ub; x`, and a p-value of `r x=MLMA$pval; x`.  
+From this, we can interpret that the overall effect size among all the studies in the meta-analysis is not significantly different from zero.  
+The prediction interval was `r x=predict$ci.lb; x` to `r x=predict$ci.ub; x`, which once again tells us that the effect size is not expected to be significantly different from zero.  
 
-In the I^2 analysis we can see that `r x=i2_vals[2]; x`% of the variation in the log response ratio is explained by a difference in the study, and `r x=i2_vals[3]; x`% is explained by a difference in observation. Together, this explains all the variation, which is consistent with the true effect size not being significantly different from zero.
+In the I^2 analysis we can see that `r x=i2_vals[2]; x`% of the variation in the log response ratio is explained by a difference in the study, and `r x=i2_vals[3]; x`% is explained by a difference in observation. Together, this explains all the variation, which is consistent with the true effect size not being significantly different from zero.  
 
 
 ### Q7
@@ -183,8 +183,6 @@ Funnel plot for visually assessing the possibility of publication bias.
 ggplot(lnrr, aes(y = abs(log(1/sqrt(vi))), x = yi)) + geom_point() + geom_vline(aes(xintercept = 0)) +
     labs(y = "Precision (1/SE)", x = "log Reponse Ratio (lnRR)") + theme_bw()
 ```
-
-Fig. \@ref(fig:funnel)
 
 ### Q8
 Time-lag plot assessing how effect sizes may or may not have changed through time.
@@ -226,7 +224,7 @@ Formal meta-regression model that includes inverse sampling variance (i.e., 1vln
 #  and sampling variance is what was used in week 10 to test for file-drawer bias.
 # I can only hope that asking for inverse sampling variance was a mistake.
 
-metareg_time_c <- rma.mv(yi ~ vi, V = vi, 
+metareg_time_f <- rma.mv(yi ~ vi, V = vi, 
                    method="REML",
                    random=list(~1|Authors,
                                ~1|Study), 
@@ -234,12 +232,16 @@ metareg_time_c <- rma.mv(yi ~ vi, V = vi,
                    test="t",
                    data=lnrr_temp,
                    control = list(rel.tol = 1e-2))
-summary(metareg_time_c) 
+summary(metareg_time_f) 
 ```
 
 
 ### Q11
-A written paragraph that discusses the potential for publication bias based on the meta-regression results. What type of publication bias, if any, appears to be present in the data? If publication bias is present, what does it mean and what might be contributing to such bias?
+We can see from the time-lag plot Fig. \@ref(fig:time-lag) that not only does effect size not seem to be decreasing with time, it actually appears to be increasing with time.  
+The dominance of low-power studies also appears to be consistent through time. This is contrary to what would be expected if a time-lag bias were present. A meta-regression model with year as a moderating factor similarly did not find any evidence that the year of publication is not explaining a significant amount of variation, with a 95% confidence interval of `r x=metareg_time_c$ci.lb[2]; x` to `r x=metareg_time_c$ci.ub[2]; x`, and a p-value of `r x=metareg_time_c$pval[2]; x`.    
+
+The funnel plot Fig. \@ref(fig:funnel) does not appear to show any noteworthy asymmetry, with the exception of two relatively high-power studies showing a positive effect. Thus is does not seem there is any file-drawer bias at play either. Similarly, a meta-regression model with sampling variance as a moderating factor similarly did not find any evidence that the year of publication is not explaining a significant amount of variation, with a 95% confidence interval of `r x=metareg_time_f$ci.lb[2]; x` to `r x=metareg_time_f$ci.ub[2]; x`, and a p-value of `r x=metareg_time_f$pval[2]; x`.    
+
 
 ### Q12
 Identify any studies contributing to publication bias. How do your updated meta-analysis results compare with a meta-analysis by Clement et. al. (2022)? Are there any concerns about these studies? If so, describe using references to existing papers what concerns have been raised?
